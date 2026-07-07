@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <div class="container text-center">
+    <div class="row">
+      <div class="col">
+        <form>
+          <label for="accounts" class="form-label">Менеджер аккаунтов:</label>
+          <select id="accounts" name="accounts"  class="form-select mb-3" multiple aria-label="Multiple select example">
+            {% for account in accounts %}
+              <option username="{{ account['username'] }}" password="{{ account['password'] }}">{{ account['alias'] }}</option>
+            {% endfor %}
+          </select>
+          <button id="add-account-toggle-form" type="button" class="btn btn-primary mb-3">Добавить новый</button>
+          <button id="delete-account" type="button" class="btn btn-danger disabled mb-3">Удалить</button>
+        </form>
+        <form id="add-account-form" class="d-none">
+          <label for="accounts" class="form-label">Добавить новый аккаунт:</label>
+          <label for="alias" class="form-label">Псеводноим</label>
+          <input class="form-control"  name="alias" id="add-account-alias" required>
+          <label for="username" class="form-label">Логин</label>
+          <input class="form-control"  name="username" id="add-account-username" required>
+          <label for="password" class="form-label">Пароль</label>
+          <input class="form-control"  type="password" name="password" id="add-account-password" required>
+          <button id="submit-new-account" type="button" class="btn btn-primary mt-3">Добавить аккаунт</button>
+        </form> 
+      </div>
+      <div class="col">
+        <form method="POST">
+          <label for="username" class="form-label">Логин</label>
+          <input class="form-control"  name="username" id="login-username" required>
+          <label for="password" class="form-label">Пароль</label>
+          <input class="form-control"  type="password" name="password" id="login-password" required>
+          <button class="btn btn-primary mt-3">Вход</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.getElementById("add-account-toggle-form").addEventListener("click", function (){
+      document.getElementById("add-account-form").classList.toggle("d-none");
+    });
+    document.getElementById("submit-new-account").addEventListener("click", function (){
+      const add_account_url = {{ url_for("auth.add_account")|tojson }};
+      let data = {
+          "alias": document.getElementById("add-account-alias").value,
+          "username": document.getElementById("add-account-username").value,
+          "password": document.getElementById("add-account-password").value,
+      }
+      fetch(add_account_url, {
+          "method": "POST",
+          "headers": {"Content-Type": "application/json"},
+          "body": JSON.stringify(data)
+      }).then(
+        response => {
+          if (response.redirected) {
+              window.location = response.url
+          }
+        }
+      )
+    });
+    const options = document.getElementById("accounts").children
+    for(let i = 0; i < options.length; i++){
+      options[i].addEventListener("click", function () {
+        document.getElementById("delete-account").classList.remove("disabled")
+        document.getElementById("login-username").value = options[i].getAttribute("username")
+        document.getElementById("login-password").value = options[i].getAttribute("password")
+      })
+    }
+    document.getElementById("delete-account").addEventListener("click", function (){
+      for(let i = 0; i < options.length; i++){
+        if(options[i].selected){
+          const target_alias = options[i].value
+          const del_account_url = {{ url_for("auth.delete_account")|tojson }};
+          let data = {"alias": target_alias}
+          fetch(del_account_url, {
+              "method": "POST",
+              "headers": {"Content-Type": "application/json"},
+              "body": JSON.stringify(data)
+          }).then(
+            response => {
+              if (response.redirected) {
+                  window.location = response.url
+              }
+            }
+          )
+        }
+      }
+    });
+  </script>
+{% endblock %}
